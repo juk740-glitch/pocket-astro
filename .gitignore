@@ -1,0 +1,25 @@
+# macOS clutter
+.DS_Store
+._*
+
+# Editor files
+*.swp
+*~
+.vscode/
+.idea/
+
+# Secrets — API keys for LLM calls go in .env, never in git
+.env
+*.key
+
+# Personal birth data stays local
+data/private/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Logs and scratch output
+*.log
+tmp/
