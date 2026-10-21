@@ -91,8 +91,15 @@ When you ask, say what you plan to do and why, in plain language.
 
 ## Checking your work
 
-- TBD in Week 9 (telemetry and testing). For now, explain how the user can
-  check each change by hand, on the server and on the N810.
+- Server tests: `server/.venv/bin/python -m unittest discover -s server/tests -v`
+  from the repo root. They must pass before every commit.
+- Public tests check against published astronomical events. The private test
+  compares a real chart with values checked on astro.com; its data stays in
+  `data/private/`, and it skips when that is missing.
+- When you add a test, make sure it can fail: break the code on purpose once
+  and watch the test catch it.
+- Pages only count as working after they are checked in MicroB on the N810.
+  Tell the user exactly what to look for on the device.
 
 ## Claude Code specifics
 
