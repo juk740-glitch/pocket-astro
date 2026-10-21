@@ -19,24 +19,28 @@ reflection journal. It is a semester project for PSAM 5600 (Parsons, Fall 2026).
 Do the heavy work (computing planet positions, moon phases, LLM calls,
 modern HTTPS) on the server. The N810 shows results and must stay fast.
 
-- The app should work with no network once its data is on the device.
-  The server produces data files (for example, precomputed positions for the
-  coming months) that are copied to the N810, rather than the N810 asking
-  the server for data while you use it.
+- The app's pages live on the N810 and open without a network.
+- The birth chart is the exception. A form on the N810 sends birth details
+  to the server over plain HTTP when Wi-Fi is on. The server calculates the
+  chart with Swiss Ephemeris (`pyswisseph`) and sends it back as a page the
+  N810 can show. If the server can't be reached, the form must say so
+  clearly instead of failing silently.
+- Plain HTTP, not HTTPS, because the N810's TLS is too old for modern HTTPS.
 
-## The interface is graphical, and the route is not decided
+## The interface: offline HTML in the N810's browser
 
-The app has a real graphical interface, not a terminal one. Two routes are
-still open:
+Decided on 2026-10-21. The app is a set of HTML pages with simple JavaScript,
+opened in the N810's built-in browser (MicroB, an old Gecko engine). The user
+opens it from a "Web shortcut" applet on the home screen.
 
-1. Offline HTML pages with simple JavaScript, opened in the N810's built-in
-   browser (MicroB, an old Gecko engine).
-2. A native Hildon app in Python/PyGTK. OS2008 ships Python 2.5;
-   check this on the device before relying on it.
-
-**Do not pick a route on your own.** If a task depends on the choice, stop and
-ask. Whichever route is chosen, assume old engines: no modern JS syntax, no
-build tools, no frameworks that need a recent runtime.
+- There is no Python on the N810 (checked 2026-10-21). Nothing written in
+  Python runs on the device; Python belongs in `server/`.
+- There is no root on the N810 (it would need R&D mode, which is not
+  enabled). Don't plan anything that needs root, such as an app-menu launcher.
+- Assume an old engine: no modern JS syntax (no `let`, `const`, arrow
+  functions, `fetch` or promises), no build tools, no frameworks.
+- A page working in a modern browser proves nothing. It has to be checked in
+  MicroB on the N810.
 
 ## Rules for code on the N810
 
@@ -53,13 +57,22 @@ build tools, no frameworks that need a recent runtime.
   examples, tests or docs, and never print them in logs.
 - Use made-up birth data for examples and tests.
 - Ask before sending real birth data to any outside LLM API.
+- Birth details sent from the N810 travel unencrypted. The server must not
+  log them or keep them after it has answered the request.
 
 ## Astrology content
 
-- Tropical zodiac and Placidus houses, unless told otherwise.
+- Tropical zodiac and Placidus houses, calculated with Swiss Ephemeris.
 - Placement descriptions should invite reflection ("you may notice…")
   rather than make predictions or claims about the user's fate.
 - Reference text (placements, houses, aspects) lives in `data/`.
+
+## License
+
+The project is AGPL-3.0, because it uses Swiss Ephemeris (`pyswisseph`),
+which is AGPL. AGPL's network rule applies: the server is a service people
+use, so its source must stay public in this repo. Ask before adding any
+dependency, and check that its license is compatible with AGPL.
 
 ## What you may do without asking
 
