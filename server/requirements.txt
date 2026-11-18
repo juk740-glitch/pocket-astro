@@ -1,0 +1,5 @@
+# Python packages for the server code. Install into the project environment with:
+#   python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+# pyswisseph builds from C source on arm64, so the server needs
+# build-essential and python3.12-dev installed first (apt).
+pyswisseph==2.10.3.2
