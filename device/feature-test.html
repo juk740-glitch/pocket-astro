@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>Pocket Astro - feature test</title>
+<!--
+  Pocket Astro feature test for the N810's MicroB browser.
+  Open this file in MicroB. It checks what the old browser engine can do
+  (saving data, drawing, reading files, astrology symbols) and shows a
+  YES / NO for each. Reload the page, and also close and reopen MicroB,
+  to see which storage methods remember things.
+
+  Written in old-style JavaScript on purpose (var, function, no JSON
+  assumptions) so that it runs on an engine from around 2008.
+-->
+<style type="text/css">
+  body { font-family: sans-serif; font-size: 18px; margin: 8px; background: #fff; color: #000; }
+  h1 { font-size: 22px; margin: 4px 0 8px 0; }
+  h2 { font-size: 19px; margin: 14px 0 4px 0; border-bottom: 1px solid #999; }
+  table { border-collapse: collapse; width: 100%; }
+  td { border: 1px solid #ccc; padding: 4px 6px; vertical-align: top; }
+  td.name { width: 45%; }
+  .yes { color: #060; font-weight: bold; }
+  .no { color: #b00; font-weight: bold; }
+  .note { color: #555; font-size: 15px; }
+  .glyphs { font-size: 28px; letter-spacing: 4px; }
+  .box { width: 120px; height: 30px; margin: 4px 0; background: #335; color: #fff;
+         -moz-border-radius: 10px; border-radius: 10px; padding: 4px; }
+  .fade { opacity: 0.5; background: rgba(200, 0, 0, 0.5); padding: 4px; }
+</style>
+</head>
+<body>
+<h1>Pocket Astro: feature test</h1>
+<p class="note">Write down or photograph the results. Then reload this page, and also
+close and reopen the browser, and check the "Saving data" section again.</p>
+
+<h2>About this device</h2>
+<table id="about"></table>
+
+<h2>Saving data (for the journal)</h2>
+<p class="note">For each method that says YES, the number counts how many times this
+page has loaded. If the number goes up after reloading, or after restarting
+the browser, that method keeps data.</p>
+<table id="storage"></table>
+
+<h2>Reading data files</h2>
+<table id="data"></table>
+
+<h2>Drawing (for the chart wheel)</h2>
+<table id="drawing"></table>
+<p class="note">Canvas test: you should see a dark circle with a gold line and the
+word "Sun" below.</p>
+<canvas id="cv" width="160" height="110"></canvas>
+<div id="svgholder"></div>
+
+<h2>Astrology symbols</h2>
+<p class="note">Do these look like symbols, or like empty boxes / question marks?</p>
+<p>Planets: <span class="glyphs">&#9737; &#9789; &#9791; &#9792; &#9794; &#9795; &#9796; &#9797; &#9798; &#9799;</span></p>
+<p>Signs: <span class="glyphs">&#9800; &#9801; &#9802; &#9803; &#9804; &#9805; &#9806; &#9807; &#9808; &#9809; &#9810; &#9811;</span></p>
+<p>Aspects: <span class="glyphs">&#9740; &#9741; &#9665; &#9633; &#9651; &#9906;</span></p>
+
+<h2>Styling</h2>
+<p class="note">The box should have rounded corners; the red strip should be see-through.</p>
+<div class="box">rounded?</div>
+<div class="fade">see-through?</div>
+
+<script type="text/javascript">
+function row(tableId, name, ok, detail) {
+  var t = document.getElementById(tableId);
+  var tr = document.createElement("tr");
+  var a = document.createElement("td");
+  var b = document.createElement("td");
+  a.className = "name";
+  a.appendChild(document.createTextNode(name));
+  if (ok === true || ok === false) {
+    var s = document.createElement("span");
+    s.className = ok ? "yes" : "no";
+    s.appendChild(document.createTextNode(ok ? "YES " : "NO "));
+    b.appendChild(s);
+  }
+  if (detail) {
+    b.appendChild(document.createTextNode(detail));
+  }
+  tr.appendChild(a);
+  tr.appendChild(b);
+  t.appendChild(tr);
+}
+
+function errText(e) {
+  if (!e) { return ""; }
+  return "(" + (e.name ? e.name + ": " : "") + (e.message ? e.message : e) + ")";
+}
+
+/* ---------- About ---------- */
+row("about", "Browser", null, navigator.userAgent);
+row("about", "Opened as", null, location.protocol + " " + location.href);
+row("about", "Screen", null, screen.width + " x " + screen.height +
+    " (window " + window.innerWidth + " x " + window.innerHeight + ")");
+var now = new Date();
+row("about", "Device clock", null, now.toString());
+row("about", "Time zone offset", null, (-now.getTimezoneOffset() / 60) + " hours from UTC");
+
+/* ---------- Storage ---------- */
+function counterTest(name, getter, setter) {
+  try {
+    var n = parseInt(getter(), 10);
+    if (isNaN(n)) { n = 0; }
+    n = n + 1;
+    setter(String(n));
+    var back = parseInt(getter(), 10);
+    if (back === n) {
+      row("storage", name, true, "loaded " + n + " time(s)");
+    } else {
+      row("storage", name, false, "wrote " + n + " but read back " + back);
+    }
+  } catch (e) {
+    row("storage", name, false, errText(e));
+  }
+}
+
+counterTest("Cookies",
+  function () {
+    var m = document.cookie.match(/(?:^|;\s*)pa_count=(\d+)/);
+    return m ? m[1] : null;
+  },
+  function (v) {
+    var exp = new Date();
+    exp.setFullYear(exp.getFullYear() + 1);
+    document.cookie = "pa_count=" + v + "; expires=" + exp.toGMTString() + "; path=/";
+  });
+
+if (typeof window.localStorage !== "undefined" && window.localStorage !== null) {
+  counterTest("localStorage",
+    function () { return window.localStorage.getItem("pa_count"); },
+    function (v) { window.localStorage.setItem("pa_count", v); });
+} else {
+  row("storage", "localStorage", false, "not available");
+}
+
+if (typeof window.globalStorage !== "undefined") {
+  counterTest("globalStorage (older Firefox)",
+    function () {
+      var item = window.globalStorage[location.hostname].getItem("pa_count");
+      return item ? item.value : null;
+    },
+    function (v) { window.globalStorage[location.hostname].setItem("pa_count", v); });
+} else {
+  row("storage", "globalStorage (older Firefox)", false, "not available");
+}
+
+if (typeof window.sessionStorage !== "undefined" && window.sessionStorage !== null) {
+  counterTest("sessionStorage (forgets on close)",
+    function () { return window.sessionStorage.getItem("pa_count"); },
+    function (v) { window.sessionStorage.setItem("pa_count", v); });
+} else {
+  row("storage", "sessionStorage (forgets on close)", false, "not available");
+}
+
+/* ---------- Data files ---------- */
+row("data", "Built-in JSON reader", typeof window.JSON !== "undefined" &&
+    typeof window.JSON.parse === "function", "");
+
+try {
+  var xhr = new XMLHttpRequest();
+  xhr.open("GET", location.href, false);
+  xhr.send(null);
+  var len = xhr.responseText ? xhr.responseText.length : 0;
+  row("data", "Read a file next to this page", len > 0,
+      "status " + xhr.status + ", " + len + " characters");
+} catch (e) {
+  row("data", "Read a file next to this page", false, errText(e));
+}
+
+/* ---------- Drawing ---------- */
+var cv = document.getElementById("cv");
+var ctx = null;
+try { ctx = cv.getContext ? cv.getContext("2d") : null; } catch (e) { ctx = null; }
+row("drawing", "Canvas", ctx !== null, "");
+if (ctx) {
+  ctx.fillStyle = "#223";
+  ctx.beginPath();
+  ctx.arc(40, 40, 35, 0, Math.PI * 2, false);
+  ctx.fill();
+  ctx.strokeStyle = "#d4a017";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(40, 40);
+  ctx.lineTo(70, 20);
+  ctx.stroke();
+  ctx.fillStyle = "#000";
+  if (typeof ctx.fillText === "function") {
+    ctx.font = "16px sans-serif";
+    ctx.fillText("Sun", 20, 100);
+    row("drawing", "Canvas text (fillText)", true, "");
+  } else if (typeof ctx.mozDrawText === "function") {
+    ctx.translate(20, 100);
+    ctx.mozTextStyle = "16px sans-serif";
+    ctx.mozDrawText("Sun");
+    row("drawing", "Canvas text (older mozDrawText)", true, "");
+  } else {
+    row("drawing", "Canvas text", false, "no way to write text on canvas");
+  }
+}
+
+try {
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("width", "160");
+  svg.setAttribute("height", "80");
+  var c = document.createElementNS(NS, "circle");
+  c.setAttribute("cx", "40");
+  c.setAttribute("cy", "40");
+  c.setAttribute("r", "35");
+  c.setAttribute("fill", "#335");
+  svg.appendChild(c);
+  document.getElementById("svgholder").appendChild(svg);
+  var ok = typeof c.getBBox === "function" && c.getBBox().width > 0;
+  row("drawing", "SVG (blue circle below canvas)", ok, "");
+} catch (e) {
+  row("drawing", "SVG", false, errText(e));
+}
+</script>
+</body>
+</html>
