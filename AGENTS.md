@@ -24,19 +24,31 @@ modern HTTPS) on the server. The N810 shows results and must stay fast.
   coming months) that are copied to the N810, rather than the N810 asking
   the server for data while you use it.
 
-## The interface is graphical, and the route is not decided
+## The interface: offline HTML pages in MicroB (decided 2026-11-18)
 
-The app has a real graphical interface, not a terminal one. Two routes are
-still open:
+The app has a real graphical interface, not a terminal one: HTML pages with
+simple JavaScript, opened as files in the N810's built-in browser (MicroB).
+This was chosen after testing the device; see `docs/device-test-results.md`.
+Python is not installed on the N810 and BusyBox has no web server, so the
+PyGTK route and a web server on the device were dropped. Don't switch routes
+without asking.
 
-1. Offline HTML pages with simple JavaScript, opened in the N810's built-in
-   browser (MicroB, an old Gecko engine).
-2. A native Hildon app in Python/PyGTK. OS2008 ships Python 2.5;
-   check this on the device before relying on it.
+MicroB is a pre-release Gecko 1.9 engine from 2008. Code for it must follow
+these limits:
 
-**Do not pick a route on your own.** If a task depends on the choice, stop and
-ask. Whichever route is chosen, assume old engines: no modern JS syntax, no
-build tools, no frameworks that need a recent runtime.
+- **JavaScript from 2007 only:** `var` and `function`. No `let`/`const`, arrow
+  functions, template strings, classes, promises, build tools or frameworks.
+- **No built-in JSON reader:** the server writes data as `.js` files that set
+  one variable (for example `var PA_POSITIONS = {...};`), loaded with
+  `<script src>`.
+- **Saving data means cookies.** There is no localStorage. Journal entries are
+  stored in cookies (about 4 KB each), so keep entries short.
+- **Drawing uses `<canvas>`**, which can draw shapes but not text. There is no
+  SVG. Put labels in HTML on top of the canvas, or draw them on the server.
+- **Fonts lack astrology symbols** (only ☉ ♂ ♀ render). Every other symbol is
+  a small image made on the server.
+- Pages live in `/home/user/MyDocs/` on the N810 and are opened as
+  `file:///...` URLs, with no network needed.
 
 ## Rules for code on the N810
 
